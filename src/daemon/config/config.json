@@ -1,0 +1,8 @@
+{
+    "sqlite":{
+        "path":"./database.db"
+    },
+    "httpserver":{
+        "listen_port":":2200"
+    }
+}
