@@ -4,5 +4,8 @@
     },
     "httpserver":{
         "listen_port":":2200"
+    },
+    "h5":{
+        "index_path":"../h5/index.html"
     }
 }

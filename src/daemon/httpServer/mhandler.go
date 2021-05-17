@@ -4,14 +4,18 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
+	"os"
+	"regexp"
 	"strconv"
 
+	"bmcat/src/daemon/config"
 	"bmcat/src/daemon/database"
 	lg "bmcat/src/daemon/log"
 )
 
 var mux map[string]func(w http.ResponseWriter, r *http.Request)
 var conns map[int]database.Db
+var regexComment = "(.ico|.css|.js|.html)"
 
 // mux = make(map[string]func(http.ResponseWriter, *http.Request))
 
@@ -21,6 +25,8 @@ type MyHandler struct {
 
 func initHandler() {
 	mux = make(map[string]func(w http.ResponseWriter, r *http.Request))
+	mux["/"] = Index
+	mux["/index"] = Index
 	// mux["/user/login"] = Login
 	// curl localhost:2200/add/connect -X POST -d '{"name": "database", "type": 0, "server": "./database.db"}' --header "Content-Type: application/json"
 	mux["/add/connect"] = AddConnect
@@ -32,6 +38,23 @@ func initHandler() {
 	conns = make(map[int]database.Db)
 }
 
+func resources(url string) ([]byte, error) {
+
+	reg0 := regexp.MustCompile(regexComment)
+	strs := reg0.FindAllString(url, -1)
+	if len(strs) > 0 {
+		// return url[1:]
+		fpath := url[1:]
+		con, err := os.ReadFile(fpath)
+		if err != nil {
+			return nil, err
+		}
+
+		return con, nil
+	}
+
+	return nil, nil
+}
 func (lh *MyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet && r.Method != http.MethodPost {
 		body, err := getRequestBody(w, r)
@@ -51,9 +74,42 @@ func (lh *MyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		h(w, r)
 		return
 	}
+	fcon, err := resources(url.String())
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(err.Error()))
+		return
+	}
 
+	if fcon != nil {
+		w.WriteHeader(http.StatusOK)
+		w.Write(fcon)
+		return
+	}
+
+	// lg.ILogger.Println("body:", string(r.GetBody()))
 	w.WriteHeader(http.StatusForbidden)
 	// io.WriteString(w, "URL:"+r.URL.String())
+}
+
+func croc(w http.ResponseWriter) {
+	w.Header().Set("Access-Control-Allow-Origin", "*")             //允许访问所有域
+	w.Header().Add("Access-Control-Allow-Headers", "Content-Type") //header的类型
+	// w.Header().Set("content-type", "application/json")             //返回数据格式是json
+}
+
+func Index(w http.ResponseWriter, r *http.Request) {
+	index, err := os.ReadFile(config.GloabalConf.IndexPath)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(err.Error()))
+		return
+	}
+
+	croc(w)
+
+	w.WriteHeader(http.StatusOK)
+	w.Write(index)
 }
 
 func AddConnect(w http.ResponseWriter, r *http.Request) {
@@ -123,6 +179,8 @@ func GetConnects(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	croc(w)
+
 	w.WriteHeader(http.StatusOK)
 	w.Write(js)
 }
@@ -165,6 +223,8 @@ func getRequestBody(w http.ResponseWriter, r *http.Request) ([]byte, error) {
 		lg.ELogger.Println("read body error!")
 		return body, err
 	}
+
+	croc(w)
 	return body, err
 }
 

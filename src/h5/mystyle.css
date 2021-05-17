@@ -1,0 +1,21 @@
+.tools_tab{
+    width: auto;
+    height: 80px;
+    display: flex;
+}
+.button{
+    width: 75px;
+    height: 75px;
+    text-align: center;
+}
+
+.db_list{
+    width: 200px;
+    height: auto;
+}
+
+.db_list_first_item{
+    width: auto;
+    height: 30px;
+    text-align: center;
+}

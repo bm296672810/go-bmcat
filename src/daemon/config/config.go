@@ -13,15 +13,19 @@ type SqliteConf struct {
 type HttpServerConf struct {
 	ListenPort string `json:"listen_port"`
 }
-
+type H5Conf struct {
+	IndexPath string `json:"index_path"`
+}
 type Conf struct {
 	SqliteConf     `json:"sqlite"`
 	HttpServerConf `json:"httpserver"`
+	H5Conf         `json:"h5"`
 }
 
 func (c *Conf) InitConf() {
 	c.Path = "./database.db"
 	c.ListenPort = ":2200"
+	c.IndexPath = "../h5/index.html"
 }
 
 func LoadConfig(configPath string) {
